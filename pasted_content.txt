@@ -1,0 +1,205 @@
+Classificação de Temas Relevantes para Empresas Privadas: Fraudes, Segurança da Informação e Conduta
+Segurança da Informação
+Itens relacionados à proteção de dados, sigilo, integridade da informação e governança digital:
+- Acesso à informação
+- Dados Pessoais - LGPD
+- Governança Digital (contexto corporativo)
+- Normas e Fiscalização
+- Redes Sociais (quando relacionado a segurança ou reputação digital)
+- Transparência
+- Transparência ativa
+- Auditoria
+- Controle social (no contexto de compliance interno)
+- Ouvidoria Interna
+Fraudes e Integridade Corporativa
+Itens relacionados a irregularidades, corrupção, fraudes internas e conformidade:
+- Fraude em auxílio emergencial - coronavírus (se houver tentativa de golpe interno)
+- Corrupção (corrupção corporativa, suborno, favorecimento)
+- Denúncia Crime (canal interno de ética e conduta)
+- Denúncia de irregularidades de colaboradores
+- Descontos associativos indevidos (relacionado a folha de pagamento)
+- Lavagem de dinheiro (especialmente para empresas do setor financeiro ou regulado)
+- Sistema Financeiro (fraudes bancárias, compliance financeiro)
+- Licitações (aplicável a empresas que participam de concorrências privadas ou públicas)
+- Benefício (fraudes na concessão interna de benefícios)
+- Cadastro (falsidade ideológica ou dados manipulados)
+- Certidões e Declarações (falsificação de documentos internos)
+- Propriedade Industrial (uso indevido, pirataria, vazamento de segredos comerciais)
+- Seguro (fraudes relacionadas a sinistros internos ou externos)
+- Operações (fraudes operacionais internas)
+Conduta, Compliance e Recursos Humanos
+Itens relacionados à ética corporativa, relações interpessoais e obrigações legais trabalhistas:
+- Assédio moral
+- Assédio sexual
+- Discriminação
+- Conduta Ética
+- Conduta Docente (se aplicável em instituições educacionais privadas)
+- Racismo
+- Guia Lilás (boas práticas contra assédio e discriminação no ambiente corporativo)
+- Recursos Humanos
+- Frequência de Servidores (controle de ponto, presença, produtividade)
+- Relações de Trabalho (compliance trabalhista, relações sindicais)
+Sistema de Denúncias com Gestão Hierárquica de Acesso para Clientes (Netlify)
+1. Objetivo
+Criar um sistema web para registro e tratamento de denúncias, com controle de acesso baseado em perfis hierárquicos (cliente, gerente, auditoria e super admin). A aplicação será hospedada no Netlify.
+2. Arquitetura e Tecnologias
+- Frontend: React + TailwindCSS
+- Backend: Firebase (Firestore + Functions)
+- Autenticação: Firebase Auth (e-mail/senha ou SSO)
+- Hospedagem: Netlify (frontend) + Firebase (backend)
+- Banco de dados: Firestore (NoSQL)
+- Controle de acesso: Regras de segurança do Firestore + claims personalizados
+3. Hierarquia de Acesso
+- Super Admin: visualiza e administra todas as empresas, usuários e denúncias do sistema
+- Cliente: pode registrar denúncia e consultar status
+- Gerente/Responsável: visualiza denúncias de clientes sob sua gestão
+- Auditoria/Compliance: acesso total dentro da empresa (visualização e encerramento de denúncias)
+4. Funcionalidades
+Cliente:
+- Registrar nova denúncia (anônima ou identificada)
+- Acompanhar status (recebida, em análise, concluída)
+Gerente:
+- Visualizar denúncias de seus subordinados
+- Inserir comentários ou solicitar mais informações
+Auditoria:
+- Ver todas as denúncias da empresa
+- Encerrar ou reclassificar
+- Gerar relatórios
+Super Admin:
+- Criar empresas e usuários vinculados
+- Visualizar denúncias de todas as empresas
+- Gerenciar perfis de acesso e configurações globais
+5. Segurança
+- Autenticação com Firebase Auth
+- Criptografia dos dados sensíveis
+- Regras de segurança no Firestore para garantir acessos conforme perfil
+- Auditoria de acesso (log interno por usuário, ação e timestamp)
+6. Deploy no Netlify (Frontend)
+1. Criar app React com Tailwind: `npx create-react-app denuncias-app && cd denuncias-app`
+2. Adicionar TailwindCSS
+3. Integrar com Firebase SDK
+4. Criar formulário e painel de acordo com os perfis
+5. Testar integração localmente
+6. Push no GitHub e conectar repositório ao Netlify
+7. Deploy automático ao commit
+7. Modelagem de Dados (Firestore)
+Coleções:
+- empresas
+  - id
+  - nome
+  - cnpj
+  - status
+- usuarios
+  - id
+  - email
+  - nome
+  - perfil: super_admin | auditoria | gerente | cliente
+  - empresa_id (relacionado à coleção empresas)
+- denuncias
+  - id
+  - titulo
+  - descricao
+  - data_criacao
+  - status: recebida | em_analise | concluida
+  - anonima: true/false
+  - empresa_id
+  - usuario_id (se identificada)
+  - historico: [ {mensagem, autor, data} ]
+8. Regras de Segurança (Exemplo - Firestore)
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /usuarios/{userId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+
+    match /empresas/{empresaId} {
+      allow read: if getUserRole() in ['super_admin'];
+      allow write: if getUserRole() == 'super_admin';
+    }
+
+    match /denuncias/{denunciaId} {
+      allow create: if request.auth != null && getUserRole() in ['cliente', 'gerente', 'auditoria'];
+      allow read, update: if canAccessDenuncia(resource.data);
+    }
+  }
+
+  function getUserRole() {
+    return request.auth.token.role;
+  }
+
+  function canAccessDenuncia(denuncia) {
+    let role = getUserRole();
+    return role == 'super_admin' ||
+           (role == 'auditoria' && denuncia.empresa_id == request.auth.token.empresa_id) ||
+           (role == 'gerente' && denuncia.empresa_id == request.auth.token.empresa_id) ||
+           (role == 'cliente' && denuncia.usuario_id == request.auth.uid);
+  }
+}
+```
+9. Próximos Passos
+- Criar wireframes das telas
+- Implementar layout com React + Tailwind
+- Integrar autenticação e claims personalizados
+- Aplicar regras de acesso no Firestore com base na `empresa_id` e `perfil`
+- Validar fluxo de criação de empresas e usuários pelo super admin
+- Testes de ponta a ponta (usuários simulados)
+- Documentar política de privacidade e termos de uso
+
+Compilado Completo do Projeto Sistema de Denúncias com Gestão Hierárquica
+________________________________________
+1. Classificação Temática para Fraudes e Segurança da Informação (Banco Privado)
+•	Segurança da Informação: Acesso à informação, Dados Pessoais - LGPD, Governança Digital, Auditoria, Ouvidoria Interna, Transparência, etc.
+•	Fraudes e Integridade Corporativa: Corrupção, Denúncia Crime, Lavagem de dinheiro, Sistema Financeiro, Cadastro, Propriedade Industrial, Seguro, etc.
+•	Conduta, Compliance e Recursos Humanos: Assédio moral, Assédio sexual, Discriminação, Conduta Ética, Racismo, Guia Lilás, Recursos Humanos, Relações de Trabalho, etc.
+________________________________________
+2. Escopo do Sistema de Denúncias
+•	Objetivo: Criar sistema web para registro e tratamento de denúncias com hierarquia e controle de acesso por perfil (cliente, gerente, auditoria, super admin)
+•	Tecnologias: React + TailwindCSS (frontend), Firebase Firestore + Functions (backend), Firebase Auth, Netlify para deploy frontend
+•	Hierarquia de acesso: Super Admin (total), Auditoria (acesso empresa), Gerente (equipe), Cliente (próprio)
+•	Funcionalidades principais: Registro/análise/encerramento denúncias, comentários, relatórios, gestão usuários e empresas, controle anonimato
+•	Segurança: Autenticação Firebase, criptografia, regras Firestore, logs auditoria
+________________________________________
+3. Descrição das Telas e Fluxos
+•	Login (email, senha) + recuperação
+•	Dashboard principal por perfil (lista denúncias, filtros, ações)
+•	Registro denúncia (título, descrição, anonimato)
+•	Visualização denúncia (detalhes, status, histórico, comentários)
+•	Gestão usuários (super admin): CRUD usuários e empresas
+________________________________________
+4. Próximos Passos Detalhados
+4.1 Criar Wireframes das Telas
+•	Desenhar layouts básicos para Login, Dashboard (4 perfis), Registro denúncia, Visualização denúncia, Gestão usuários
+•	Ferramentas sugeridas: Figma, Adobe XD, Balsamiq
+4.2 Implementar Layout com React + Tailwind
+•	Criar projeto React com create-react-app ou Vite
+•	Configurar TailwindCSS para estilização responsiva
+•	Desenvolver componentes reutilizáveis: botões, formulários, tabelas, cards
+•	Implementar navegação e rotas (React Router)
+4.3 Integrar Autenticação e Claims Personalizados
+•	Configurar Firebase Auth para login e registro
+•	Criar regras para perfis de acesso e custom claims (super admin, gerente, auditoria, cliente)
+•	Testar autenticação e diferenciação de interface por perfil
+4.4 Aplicar Regras de Acesso no Firestore
+•	Modelar banco Firestore conforme escopo (empresas, usuários, denúncias)
+•	Criar regras Firestore para restringir leitura e escrita conforme perfil e empresa_id
+•	Garantir segurança para denúncias anônimas e identificadas
+4.5 Validar Fluxo Criação Empresas e Usuários pelo Super Admin
+•	Implementar CRUD empresas e usuários na interface do super admin
+•	Testar criação, edição, exclusão e associação correta das relações
+•	Garantir que super admin visualize e gerencie tudo
+4.6 Testes de Ponta a Ponta (Usuários Simulados)
+•	Criar scripts de teste para usuários com perfis diferentes
+•	Validar fluxo completo: login, registro denúncia, acompanhamento, comentários, encerramento
+•	Verificar segurança e restrição de acesso
+4.7 Documentar Política de Privacidade e Termos de Uso
+•	Redigir documento conforme LGPD e práticas do banco
+•	Incluir regras de anonimato, uso dos dados, acesso e exclusão
+•	Criar termos que o usuário deve aceitar no registro
+________________________________________
+5. Observações Finais
+•	O projeto é modular e escalável para integração futura com outros sistemas do banco
+•	Recomendação de acompanhamento contínuo com testes de segurança e auditoria
+•	Documentação clara facilitará treinamentos internos e auditorias
+
